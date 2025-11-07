@@ -85,6 +85,10 @@ export default function CRDashboardPage() {
     fetchAttendance();
   }, [router, toast]);
 
+  const handleAttendanceChange = (rollNo: string, isPresent: boolean) => {
+    setAttendance((prev) => ({ ...prev, [rollNo]: isPresent }));
+  };
+
   useEffect(() => {
     // Prevent running this effect until data is loaded
     if (loading) return;
@@ -153,7 +157,7 @@ export default function CRDashboardPage() {
       <main className="container mx-auto p-4 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">CR Dashboard</h1>
-          <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap w-full md:w-auto">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
