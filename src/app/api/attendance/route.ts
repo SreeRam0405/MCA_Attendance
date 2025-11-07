@@ -3,9 +3,10 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import type { AttendanceRecord } from '@/lib/types';
 
-// Initialize Firebase Admin SDK
-try {
-  if (!admin.apps.length) {
+// Initialize Firebase Admin SDK, but only if it hasn't been initialized already.
+// This is the key to preventing errors in development with hot-reloading.
+if (!admin.apps.length) {
+  try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     if (!privateKey) {
       throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
@@ -17,9 +18,9 @@ try {
         privateKey: privateKey.replace(/\\n/g, '\n'),
       }),
     });
+  } catch (error: any) {
+    console.error('Firebase Admin initialization error:', error.message);
   }
-} catch (error: any) {
-  console.error('Firebase Admin initialization error:', error.message);
 }
 
 const db = admin.firestore();
@@ -34,7 +35,7 @@ export async function GET() {
     if (docSnap.exists) {
       return NextResponse.json(docSnap.data() || {});
     } else {
-      // If no document exists, return an empty object, which is a valid state.
+      // If no document exists, return an empty object. This is a valid, expected state.
       return NextResponse.json({});
     }
   } catch (error: any) {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
     
     // Using set with merge: true will create the document if it doesn't exist,
-    // and update/merge the fields if it does. This is safer than a simple set.
+    // and update/merge the fields if it does. This is the correct way to update partial data.
     await docRef.set(records, { merge: true }); 
     
     return NextResponse.json({ success: true, message: 'Attendance saved successfully.' });
