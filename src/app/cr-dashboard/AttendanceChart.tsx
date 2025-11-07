@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from "recharts"
 import type { AttendanceRecord, Student } from "@/lib/types";
+import { subjects } from "@/lib/data";
 
 interface AttendanceChartProps {
   attendanceData: AttendanceRecord;
@@ -16,23 +17,35 @@ interface AttendanceChartProps {
 }
 
 export default function AttendanceChart({ attendanceData, students }: AttendanceChartProps) {
-  const totalDays = Object.keys(attendanceData).length;
+  const totalClassesPerSubject: Record<string, number> = {};
+  
+  for (const date in attendanceData) {
+    for (const subject in attendanceData[date]) {
+      if (subjects.includes(subject)) {
+        totalClassesPerSubject[subject] = (totalClassesPerSubject[subject] || 0) + 1;
+      }
+    }
+  }
+
+  const totalClasses = Object.values(totalClassesPerSubject).reduce((acc, count) => acc + count, 0);
 
   const chartData = students.map(student => {
     let attendedDays = 0;
     for (const date in attendanceData) {
-      if (attendanceData[date].includes(student.rollNo)) {
-        attendedDays++;
-      }
+        for (const subject in attendanceData[date]) {
+            if (attendanceData[date][subject].includes(student.rollNo)) {
+                attendedDays++;
+            }
+        }
     }
-    const percentage = totalDays > 0 ? (attendedDays / totalDays) * 100 : 0;
+    const percentage = totalClasses > 0 ? (attendedDays / totalClasses) * 100 : 0;
     return {
       name: student.name,
       percentage: Math.round(percentage),
     };
   });
 
-  if(totalDays === 0) {
+  if(totalClasses === 0) {
     return (
         <div className="flex items-center justify-center h-[300px] text-muted-foreground">
             No attendance data available to show chart.

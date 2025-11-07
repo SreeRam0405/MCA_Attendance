@@ -26,4 +26,6 @@ export interface LoggedInUser {
     rollNo?: string;
 }
 
-export type AttendanceRecord = Record<string, string[]>;
+export type AttendanceSubjectRecord = Record<string, string[]>;
+export type AttendanceDateRecord = Record<string, AttendanceSubjectRecord>;
+export type AttendanceRecord = Record<string, AttendanceDateRecord>;

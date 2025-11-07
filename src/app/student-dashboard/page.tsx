@@ -13,6 +13,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { subjects } from "@/lib/data";
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -42,12 +43,23 @@ export default function StudentDashboardPage() {
       ? JSON.parse(recordsString)
       : {};
 
-    const totalClasses = Object.keys(records).length;
+      const totalClassesPerSubject: Record<string, number> = {};
+      for (const date in records) {
+        for (const subject in records[date]) {
+          if (subjects.includes(subject)) {
+            totalClassesPerSubject[subject] = (totalClassesPerSubject[subject] || 0) + 1;
+          }
+        }
+      }
+      const totalClasses = Object.values(totalClassesPerSubject).reduce((acc, count) => acc + count, 0);
+
     let attendedClasses = 0;
     if (parsedUser.rollNo) {
       for (const date in records) {
-        if (records[date].includes(parsedUser.rollNo)) {
-          attendedClasses++;
+        for (const subject in records[date]) {
+            if (records[date][subject].includes(parsedUser.rollNo)) {
+                attendedClasses++;
+            }
         }
       }
     }

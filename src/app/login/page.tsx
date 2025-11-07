@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,12 +42,6 @@ const studentSchema = z.object({
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!localStorage.getItem("collegeDetails")) {
-      router.replace("/");
-    }
-  }, [router]);
 
   const crForm = useForm<z.infer<typeof crSchema>>({
     resolver: zodResolver(crSchema),

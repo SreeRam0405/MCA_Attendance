@@ -10,3 +10,5 @@ export const users: UserData = {
     { rollNo: "105", name: "Vikram", password: "vikram123" },
   ],
 };
+
+export const subjects = ["PDS", "CO", "DBMS", "MSF"];

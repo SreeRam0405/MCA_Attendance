@@ -14,6 +14,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,16 +31,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { users } from "@/lib/data";
+import { users, subjects } from "@/lib/data";
 import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import AttendanceChart from "./AttendanceChart";
+import { ManageAttendanceDialog } from "./ManageAttendanceDialog";
+import { ExportAttendance } from "./ExportAttendance";
 
 export default function CRDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState<Date>(new Date());
+  const [selectedSubject, setSelectedSubject] = useState<string>(subjects[0]);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord>({});
 
@@ -58,13 +68,13 @@ export default function CRDashboardPage() {
 
   useEffect(() => {
     const formattedDate = format(date, "yyyy-MM-dd");
-    const todaysRecord = allAttendanceRecords[formattedDate] || [];
+    const todaysRecord = allAttendanceRecords[formattedDate]?.[selectedSubject] || [];
     const initialAttendance = users.students.reduce((acc, student) => {
       acc[student.rollNo] = todaysRecord.includes(student.rollNo);
       return acc;
     }, {} as Record<string, boolean>);
     setAttendance(initialAttendance);
-  }, [date, allAttendanceRecords]);
+  }, [date, selectedSubject, allAttendanceRecords]);
 
   const handleAttendanceChange = (rollNo: string, checked: boolean) => {
     setAttendance((prev) => ({ ...prev, [rollNo]: checked }));
@@ -74,13 +84,19 @@ export default function CRDashboardPage() {
     const formattedDate = format(date, "yyyy-MM-dd");
     const presentStudents = Object.keys(attendance).filter((rollNo) => attendance[rollNo]);
     
-    const updatedRecords = { ...allAttendanceRecords, [formattedDate]: presentStudents };
+    const updatedRecords: AttendanceRecord = { 
+        ...allAttendanceRecords, 
+        [formattedDate]: {
+            ...allAttendanceRecords[formattedDate],
+            [selectedSubject]: presentStudents 
+        }
+    };
     localStorage.setItem("attendanceRecords", JSON.stringify(updatedRecords));
     setAllAttendanceRecords(updatedRecords);
 
     toast({
       title: "Attendance Saved ✅",
-      description: `Attendance for ${format(date, "PPP")} has been successfully saved.`,
+      description: `Attendance for ${selectedSubject} on ${format(date, "PPP")} has been successfully saved.`,
     });
   };
 
@@ -101,7 +117,7 @@ export default function CRDashboardPage() {
       <main className="container mx-auto p-4 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold">CR Dashboard</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -124,7 +140,22 @@ export default function CRDashboardPage() {
                 />
               </PopoverContent>
             </Popover>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                    {subjects.map(subject => (
+                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
             <Button onClick={saveAttendance}>Save Attendance</Button>
+            <ManageAttendanceDialog 
+              records={allAttendanceRecords} 
+              setRecords={setAllAttendanceRecords} 
+            />
+             <ExportAttendance records={allAttendanceRecords} />
           </div>
         </div>
 
@@ -140,7 +171,7 @@ export default function CRDashboardPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Present Today</CardTitle>
+              <CardTitle className="text-sm font-medium">Present ({selectedSubject})</CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -196,7 +227,7 @@ export default function CRDashboardPage() {
             <div className="lg:col-span-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Attendance Overview</CardTitle>
+                        <CardTitle>Overall Attendance Overview</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <AttendanceChart attendanceData={allAttendanceRecords} students={users.students} />
