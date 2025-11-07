@@ -4,7 +4,6 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { AttendanceRecord } from '@/lib/types';
 
-// Define a stable document reference.
 const attendanceCollectionId = 'attendance';
 const attendanceDocId = 'records';
 

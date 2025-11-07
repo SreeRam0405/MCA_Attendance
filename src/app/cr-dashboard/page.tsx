@@ -64,6 +64,8 @@ export default function CRDashboardPage() {
       try {
         const response = await fetch('/api/attendance');
         if (!response.ok) {
+          const errorData = await response.json();
+          console.error("API Error:", errorData.details);
           throw new Error('Failed to fetch attendance');
         }
         const records: AttendanceRecord = await response.json();
@@ -72,7 +74,7 @@ export default function CRDashboardPage() {
         console.error("Failed to fetch attendance records:", error);
         toast({
           title: "Error",
-          description: "Could not load attendance data.",
+          description: "Could not load attendance data. Please check your connection or Firebase setup.",
           variant: "destructive",
         });
       } finally {
@@ -95,10 +97,6 @@ export default function CRDashboardPage() {
     }, {} as Record<string, boolean>);
     setAttendance(initialAttendance);
   }, [date, selectedSubject, allAttendanceRecords, loading]);
-
-  const handleAttendanceChange = (rollNo: string, checked: boolean) => {
-    setAttendance((prev) => ({ ...prev, [rollNo]: checked }));
-  };
 
   const saveAttendance = async () => {
     const formattedDate = format(date, "yyyy-MM-dd");
