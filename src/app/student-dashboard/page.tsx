@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,10 +37,11 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select"
-import type { AttendanceRecord, LoggedInUser, Student } from "@/lib/types";
+import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { subjects, users } from "@/lib/data";
+import { subjects } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface DetailedAttendance {
     date: string;
@@ -49,6 +51,7 @@ interface DetailedAttendance {
 
 export default function StudentDashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord>({});
@@ -77,13 +80,25 @@ export default function StudentDashboardPage() {
     }
     setUser(parsedUser);
 
-    const recordsString = localStorage.getItem("attendanceRecords");
-    const records: AttendanceRecord = recordsString
-      ? JSON.parse(recordsString)
-      : {};
-    setAllRecords(records);
-    setLoading(false);
-  }, [router]);
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch('/api/attendance');
+        const records: AttendanceRecord = await response.json();
+        setAllRecords(records);
+      } catch (error) {
+        console.error("Failed to fetch attendance records:", error);
+        toast({
+          title: "Error",
+          description: "Could not load attendance data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAttendance();
+  }, [router, toast]);
 
   useEffect(() => {
     if (!user || !user.rollNo) return;

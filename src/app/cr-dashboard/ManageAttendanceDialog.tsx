@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -23,14 +24,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { users } from "@/lib/data";
 import type { AttendanceRecord } from "@/lib/types";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface ManageAttendanceDialogProps {
   records: AttendanceRecord;
-  setRecords: (records: AttendanceRecord) => void;
+  onRecordsUpdate: (records: AttendanceRecord) => void;
 }
 
-export function ManageAttendanceDialog({ records, setRecords }: ManageAttendanceDialogProps) {
+export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAttendanceDialogProps) {
   const [open, setOpen] = useState(false);
+  const [editedRecords, setEditedRecords] = useState(records);
+  const { toast } = useToast();
+
+  // When the dialog opens, sync the state
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setEditedRecords(JSON.parse(JSON.stringify(records))); // Deep copy
+    }
+    setOpen(isOpen);
+  };
 
   const handleAttendanceChange = (
     date: string,
@@ -38,7 +50,7 @@ export function ManageAttendanceDialog({ records, setRecords }: ManageAttendance
     rollNo: string,
     present: boolean
   ) => {
-    const newRecords = { ...records };
+    const newRecords = { ...editedRecords };
     if (!newRecords[date]) newRecords[date] = {};
     if (!newRecords[date][subject]) newRecords[date][subject] = [];
 
@@ -50,18 +62,42 @@ export function ManageAttendanceDialog({ records, setRecords }: ManageAttendance
     } else if (!present && studentIndex !== -1) {
       studentList.splice(studentIndex, 1);
     }
-    setRecords(newRecords);
+    setEditedRecords(newRecords);
   };
   
-  const handleSave = () => {
-    localStorage.setItem("attendanceRecords", JSON.stringify(records));
-    setOpen(false);
-  }
+  const handleSave = async () => {
+     try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editedRecords),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save attendance');
+      }
+      
+      onRecordsUpdate(editedRecords); // Update parent state
+      toast({
+        title: "Success",
+        description: "Attendance records updated successfully.",
+      });
+      setOpen(false);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Could not save attendance records.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const sortedDates = Object.keys(records).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full sm:w-auto">Manage Attendance</Button>
       </DialogTrigger>
@@ -94,7 +130,7 @@ export function ManageAttendanceDialog({ records, setRecords }: ManageAttendance
                                 <TableCell>{student.name}</TableCell>
                                 <TableCell className="text-right">
                                     <Checkbox
-                                    checked={records[date]?.[subject]?.includes(student.rollNo)}
+                                    checked={editedRecords[date]?.[subject]?.includes(student.rollNo)}
                                     onCheckedChange={(checked) =>
                                         handleAttendanceChange(date, subject, student.rollNo, !!checked)
                                     }

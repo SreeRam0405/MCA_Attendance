@@ -1,25 +1,17 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/icons/logo";
-import type { CollegeDetails } from "@/lib/types";
 
 export function DashboardHeader() {
   const router = useRouter();
-  const [collegeDetails, setCollegeDetails] = useState<CollegeDetails | null>(null);
-
-  useEffect(() => {
-    const storedDetails = localStorage.getItem("collegeDetails");
-    if (storedDetails) {
-      setCollegeDetails(JSON.parse(storedDetails));
-    }
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
+    // We don't remove college details, so they persist for the next login
     router.push("/login");
   };
 
@@ -31,10 +23,6 @@ export function DashboardHeader() {
           <span className="font-bold hidden sm:inline-block">Class Attendance</span>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="hidden md:flex flex-col items-end text-sm">
-            <p className="font-semibold">{collegeDetails?.collegeName}</p>
-            <p className="text-muted-foreground">{collegeDetails?.className}</p>
-          </div>
           <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
             <LogOut className="h-5 w-5" />
           </Button>

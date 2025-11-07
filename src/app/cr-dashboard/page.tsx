@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -59,12 +60,25 @@ export default function CRDashboardPage() {
       return;
     }
 
-    const recordsString = localStorage.getItem("attendanceRecords");
-    const records: AttendanceRecord = recordsString ? JSON.parse(recordsString) : {};
-    setAllAttendanceRecords(records);
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch('/api/attendance');
+        const records: AttendanceRecord = await response.json();
+        setAllAttendanceRecords(records);
+      } catch (error) {
+        console.error("Failed to fetch attendance records:", error);
+        toast({
+          title: "Error",
+          description: "Could not load attendance data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    setLoading(false);
-  }, [router]);
+    fetchAttendance();
+  }, [router, toast]);
 
   useEffect(() => {
     const formattedDate = format(date, "yyyy-MM-dd");
@@ -80,7 +94,7 @@ export default function CRDashboardPage() {
     setAttendance((prev) => ({ ...prev, [rollNo]: checked }));
   };
 
-  const saveAttendance = () => {
+  const saveAttendance = async () => {
     const formattedDate = format(date, "yyyy-MM-dd");
     const presentStudents = Object.keys(attendance).filter((rollNo) => attendance[rollNo]);
     
@@ -91,13 +105,31 @@ export default function CRDashboardPage() {
             [selectedSubject]: presentStudents 
         }
     };
-    localStorage.setItem("attendanceRecords", JSON.stringify(updatedRecords));
-    setAllAttendanceRecords(updatedRecords);
+    
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRecords),
+      });
 
-    toast({
-      title: "Attendance Saved ✅",
-      description: `Attendance for ${selectedSubject} on ${format(date, "PPP")} has been successfully saved.`,
-    });
+      if (!response.ok) {
+        throw new Error('Failed to save attendance');
+      }
+
+      setAllAttendanceRecords(updatedRecords);
+      toast({
+        title: "Attendance Saved ✅",
+        description: `Attendance for ${selectedSubject} on ${format(date, "PPP")} has been successfully saved.`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Could not save attendance. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -117,7 +149,7 @@ export default function CRDashboardPage() {
       <main className="container mx-auto p-4 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">CR Dashboard</h1>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -154,7 +186,7 @@ export default function CRDashboardPage() {
               <Button onClick={saveAttendance} className="w-full">Save Attendance</Button>
               <ManageAttendanceDialog 
                 records={allAttendanceRecords} 
-                setRecords={setAllAttendanceRecords} 
+                onRecordsUpdate={setAllAttendanceRecords} 
               />
                <ExportAttendance records={allAttendanceRecords} />
             </div>
