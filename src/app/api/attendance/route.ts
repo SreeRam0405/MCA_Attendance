@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import type { AttendanceRecord } from '@/lib/types';
 
-// Initialize Firebase Admin SDK, but only if it hasn't been initialized already.
-// This is the key to preventing errors in development with hot-reloading.
+// This is the key fix: Initialize Firebase Admin SDK only if it hasn't been initialized already.
+// This prevents errors during development with hot-reloading.
 if (!admin.apps.length) {
   try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
@@ -20,9 +20,7 @@ if (!admin.apps.length) {
     });
   } catch (error: any) {
     console.error('Firebase Admin initialization error:', error.message);
-    // We can't proceed if initialization fails, so we'll return an error response immediately.
-    // This will help in debugging if the environment variables are not set correctly.
-    // Note: This part of the code runs at build/startup time, not on every request.
+    // This will cause GET/POST requests to fail, which is intended if setup is wrong.
   }
 }
 
@@ -31,6 +29,12 @@ const attendanceCollectionId = 'attendance';
 const attendanceDocId = 'records';
 
 export async function GET() {
+  // Ensure the app was initialized before proceeding
+  if (!admin.apps.length) {
+    console.error("Firebase Admin has not been initialized. Check your environment variables.");
+    return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+  }
+  
   try {
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
     const docSnap = await docRef.get();
@@ -48,6 +52,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    // Ensure the app was initialized before proceeding
+  if (!admin.apps.length) {
+    console.error("Firebase Admin has not been initialized. Check your environment variables.");
+    return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+  }
+
   try {
     const records: AttendanceRecord = await request.json();
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
