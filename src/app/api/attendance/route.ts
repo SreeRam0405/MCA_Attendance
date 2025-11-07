@@ -20,6 +20,9 @@ if (!admin.apps.length) {
     });
   } catch (error: any) {
     console.error('Firebase Admin initialization error:', error.message);
+    // We can't proceed if initialization fails, so we'll return an error response immediately.
+    // This will help in debugging if the environment variables are not set correctly.
+    // Note: This part of the code runs at build/startup time, not on every request.
   }
 }
 
