@@ -4,19 +4,22 @@ import admin from 'firebase-admin';
 import type { AttendanceRecord } from '@/lib/types';
 
 // Initialize Firebase Admin SDK
-// This needs service account credentials. Make sure the environment variables are set.
-if (!admin.apps.length) {
-  try {
+try {
+  if (!admin.apps.length) {
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    if (!privateKey) {
+      throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
+    }
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        privateKey: privateKey.replace(/\\n/g, '\n'),
       }),
     });
-  } catch (error: any) {
-    console.error('Firebase Admin initialization error:', error.message);
   }
+} catch (error: any) {
+  console.error('Firebase Admin initialization error:', error.message);
 }
 
 const db = admin.firestore();
@@ -29,7 +32,7 @@ export async function GET() {
     const docSnap = await docRef.get();
 
     if (docSnap.exists) {
-      return NextResponse.json(docSnap.data());
+      return NextResponse.json(docSnap.data() || {});
     } else {
       // If no document exists, return an empty object, which is a valid state.
       return NextResponse.json({});
@@ -44,9 +47,13 @@ export async function POST(request: Request) {
   try {
     const records: AttendanceRecord = await request.json();
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
-    await docRef.set(records, { merge: true }); // Use merge: true to avoid overwriting the whole document
+    
+    // Using set with merge: true will create the document if it doesn't exist,
+    // and update/merge the fields if it does. This is safer than a simple set.
+    await docRef.set(records, { merge: true }); 
+    
     return NextResponse.json({ success: true, message: 'Attendance saved successfully.' });
-  } catch (error: any) {
+  } catch (error: any)    {
     console.error("Error saving attendance to Firestore:", error.message);
     return NextResponse.json({ error: 'Failed to save attendance data', details: error.message }, { status: 500 });
   }

@@ -64,7 +64,12 @@ export default function CRDashboardPage() {
       try {
         const response = await fetch('/api/attendance');
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorText = await response.text();
+          console.error("API Error Response:", errorText);
+          let errorData = { details: 'Failed to parse error response.' };
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (e) {}
           console.error("API Error:", errorData.details);
           throw new Error('Failed to fetch attendance');
         }

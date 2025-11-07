@@ -110,7 +110,7 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
             <p className="text-muted-foreground text-center py-8">No attendance records found.</p>
           ) : sortedDates.map((date) => (
             <div key={date} className="mb-4">
-              <h3 className="font-bold text-lg mb-2">{format(new Date(date), "PPP")}</h3>
+              <h3 className="font-bold text-lg mb-2">{format(new Date(date.replace(/-/g, '/')), "PPP")}</h3>
               {Object.keys(records[date]).map((subject) => (
                 <div key={subject} className="mb-4">
                     <h4 className="font-semibold text-md mb-1">{subject}</h4>
