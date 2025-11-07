@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BookCheck, CalendarDays, Percent, Smile, Frown } from "lucide-react";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { BookCheck, CalendarDays, Percent, Smile, Frown, Calendar as CalendarIcon } from "lucide-react";
+
 import {
   Card,
   CardContent,
@@ -10,20 +13,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select"
+import type { AttendanceRecord, LoggedInUser, Student } from "@/lib/types";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { subjects } from "@/lib/data";
+import { subjects, users } from "@/lib/data";
+import { cn } from "@/lib/utils";
+
+interface DetailedAttendance {
+    date: string;
+    subject: string;
+    status: "Present" | "Absent";
+}
 
 export default function StudentDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<LoggedInUser | null>(null);
+  const [allRecords, setAllRecords] = useState<AttendanceRecord>({});
+  
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+
   const [attendanceStats, setAttendanceStats] = useState({
     attended: 0,
     total: 0,
     percentage: 0,
   });
+  const [detailedAttendance, setDetailedAttendance] = useState<DetailedAttendance[]>([]);
+
 
   useEffect(() => {
     const userString = localStorage.getItem("loggedInUser");
@@ -32,7 +71,7 @@ export default function StudentDashboardPage() {
       return;
     }
     const parsedUser: LoggedInUser = JSON.parse(userString);
-    if (parsedUser.role !== "student") {
+    if (parsedUser.role !== "student" || !parsedUser.rollNo) {
       router.replace("/login");
       return;
     }
@@ -42,37 +81,57 @@ export default function StudentDashboardPage() {
     const records: AttendanceRecord = recordsString
       ? JSON.parse(recordsString)
       : {};
+    setAllRecords(records);
+    setLoading(false);
+  }, [router]);
 
-      const totalClassesPerSubject: Record<string, number> = {};
-      for (const date in records) {
-        for (const subject in records[date]) {
-          if (subjects.includes(subject)) {
-            totalClassesPerSubject[subject] = (totalClassesPerSubject[subject] || 0) + 1;
-          }
-        }
-      }
-      const totalClasses = Object.values(totalClassesPerSubject).reduce((acc, count) => acc + count, 0);
+  useEffect(() => {
+    if (!user || !user.rollNo) return;
 
+    let totalClasses = 0;
     let attendedClasses = 0;
-    if (parsedUser.rollNo) {
-      for (const date in records) {
-        for (const subject in records[date]) {
-            if (records[date][subject].includes(parsedUser.rollNo)) {
-                attendedClasses++;
+    const detailedRecords: DetailedAttendance[] = [];
+
+    const sortedDates = Object.keys(allRecords).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+
+    sortedDates.forEach(dateStr => {
+        const date = new Date(dateStr);
+        if (dateRange?.from && date < dateRange.from) return;
+        if (dateRange?.to && date > dateRange.to) return;
+
+        const dayRecords = allRecords[dateStr];
+        const subjectsInDay = selectedSubject === 'all' ? subjects : [selectedSubject];
+        
+        subjects.forEach(subject => {
+            const isSubjectFiltered = selectedSubject === 'all' || selectedSubject === subject;
+
+            if(dayRecords[subject]){
+                if(isSubjectFiltered) totalClasses++;
+                
+                const isPresent = dayRecords[subject].includes(user.rollNo!);
+                if(isPresent && isSubjectFiltered) {
+                    attendedClasses++;
+                }
+
+                if(isSubjectFiltered){
+                    detailedRecords.push({
+                        date: dateStr,
+                        subject: subject,
+                        status: isPresent ? "Present" : "Absent"
+                    });
+                }
             }
-        }
-      }
-    }
+        });
+    });
 
     setAttendanceStats({
       attended: attendedClasses,
       total: totalClasses,
-      percentage:
-        totalClasses > 0 ? (attendedClasses / totalClasses) * 100 : 0,
+      percentage: totalClasses > 0 ? (attendedClasses / totalClasses) * 100 : 0,
     });
+    setDetailedAttendance(detailedRecords);
 
-    setLoading(false);
-  }, [router]);
+  }, [user, allRecords, selectedSubject, dateRange]);
 
   if (loading || !user) {
     return (
@@ -92,9 +151,60 @@ export default function StudentDashboardPage() {
     <>
       <DashboardHeader />
       <main className="container mx-auto p-4 md:p-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Welcome, {user.name}!</h1>
-          <p className="text-muted-foreground">Roll No: {user.rollNo}</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 className="text-3xl font-bold">Welcome, {user.name}!</h1>
+                <p className="text-muted-foreground">Roll No: {user.rollNo}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select Subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        {subjects.map(subject => (
+                            <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-[280px] justify-start text-left font-normal",
+                            !dateRange && "text-muted-foreground"
+                        )}
+                        >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                            dateRange.to ? (
+                            <>
+                                {format(dateRange.from, "LLL dd, y")} -{" "}
+                                {format(dateRange.to, "LLL dd, y")}
+                            </>
+                            ) : (
+                            format(dateRange.from, "LLL dd, y")
+                            )
+                        ) : (
+                            <span>Pick a date range</span>
+                        )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                        />
+                    </PopoverContent>
+                </Popover>
+                <Button variant="outline" onClick={() => setDateRange(undefined)} disabled={!dateRange}>Clear Filter</Button>
+            </div>
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
@@ -127,26 +237,74 @@ export default function StudentDashboardPage() {
           </Card>
         </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Your Attendance Progress</CardTitle>
-                <CardDescription>
-                    Here is a summary of your attendance. Minimum 75% is required.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Progress value={attendancePercentage} className="w-full" />
-                <div className="flex items-center justify-center text-center p-4 rounded-lg bg-muted">
-                    {isAttendanceGood ? (
-                        <Smile className="h-6 w-6 mr-2 text-green-500" />
-                    ) : (
-                        <Frown className="h-6 w-6 mr-2 text-red-500" />
-                    )}
-                    <p className="text-lg font-medium">{motivationalMessage}</p>
-                </div>
-            </CardContent>
-        </Card>
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Attendance Progress</CardTitle>
+                    <CardDescription>
+                        Here is a summary of your attendance. Minimum 75% is required.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Progress value={attendancePercentage} className="w-full" />
+                    <div className="flex items-center justify-center text-center p-4 rounded-lg bg-muted">
+                        {isAttendanceGood ? (
+                            <Smile className="h-6 w-6 mr-2 text-green-500" />
+                        ) : (
+                            <Frown className="h-6 w-6 mr-2 text-red-500" />
+                        )}
+                        <p className="text-lg font-medium">{motivationalMessage}</p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Detailed Attendance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="max-h-[300px] overflow-y-auto">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background">
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Subject</TableHead>
+                                    <TableHead className="text-right">Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {detailedAttendance.length > 0 ? (
+                                    detailedAttendance.map((record, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{format(new Date(record.date), "PPP")}</TableCell>
+                                            <TableCell>{record.subject}</TableCell>
+                                            <TableCell className="text-right">
+                                                <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", 
+                                                    record.status === "Present" 
+                                                    ? "bg-green-100 text-green-800"
+                                                    : "bg-red-100 text-red-800"
+                                                )}>
+                                                    {record.status}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            No records to display for the selected filter.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       </main>
     </>
   );
 }
+
+    
