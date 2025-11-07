@@ -1,0 +1,210 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Users, UserCheck } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { users } from "@/lib/data";
+import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
+import { DashboardHeader } from "@/components/DashboardHeader";
+import AttendanceChart from "./AttendanceChart";
+
+export default function CRDashboardPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [date, setDate] = useState<Date>(new Date());
+  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord>({});
+
+  useEffect(() => {
+    const userString = localStorage.getItem("loggedInUser");
+    if (!userString) {
+      router.replace("/login");
+      return;
+    }
+    const user: LoggedInUser = JSON.parse(userString);
+    if (user.role !== "CR") {
+      router.replace("/login");
+      return;
+    }
+
+    const recordsString = localStorage.getItem("attendanceRecords");
+    const records: AttendanceRecord = recordsString ? JSON.parse(recordsString) : {};
+    setAllAttendanceRecords(records);
+    
+    setLoading(false);
+  }, [router]);
+
+  useEffect(() => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const todaysRecord = allAttendanceRecords[formattedDate] || [];
+    const initialAttendance = users.students.reduce((acc, student) => {
+      acc[student.rollNo] = todaysRecord.includes(student.rollNo);
+      return acc;
+    }, {} as Record<string, boolean>);
+    setAttendance(initialAttendance);
+  }, [date, allAttendanceRecords]);
+
+  const handleAttendanceChange = (rollNo: string, checked: boolean) => {
+    setAttendance((prev) => ({ ...prev, [rollNo]: checked }));
+  };
+
+  const saveAttendance = () => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const presentStudents = Object.keys(attendance).filter((rollNo) => attendance[rollNo]);
+    
+    const updatedRecords = { ...allAttendanceRecords, [formattedDate]: presentStudents };
+    localStorage.setItem("attendanceRecords", JSON.stringify(updatedRecords));
+    setAllAttendanceRecords(updatedRecords);
+
+    toast({
+      title: "Attendance Saved ✅",
+      description: `Attendance for ${format(date, "PPP")} has been successfully saved.`,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading Dashboard...</div>
+      </div>
+    );
+  }
+
+  const presentCount = Object.values(attendance).filter(Boolean).length;
+  const totalStudents = users.students.length;
+
+  return (
+    <>
+      <DashboardHeader />
+      <main className="container mx-auto p-4 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h1 className="text-3xl font-bold">CR Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-[240px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => setDate(d || new Date())}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Button onClick={saveAttendance}>Save Attendance</Button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalStudents}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Present Today</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{presentCount}</div>
+              <p className="text-xs text-muted-foreground">
+                on {format(date, "PPP")}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-5">
+            <div className="lg:col-span-3">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Student List</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead className="w-[100px]">Roll No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="text-right">Attendance</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {users.students.map((student) => (
+                                <TableRow key={student.rollNo}>
+                                    <TableCell className="font-medium">{student.rollNo}</TableCell>
+                                    <TableCell>{student.name}</TableCell>
+                                    <TableCell className="text-right">
+                                    <div className="flex items-center justify-end space-x-2">
+                                        <label htmlFor={`att-${student.rollNo}`}>Present</label>
+                                        <Checkbox
+                                        id={`att-${student.rollNo}`}
+                                        checked={attendance[student.rollNo] || false}
+                                        onCheckedChange={(checked) =>
+                                            handleAttendanceChange(student.rollNo, !!checked)
+                                        }
+                                        />
+                                    </div>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Attendance Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <AttendanceChart attendanceData={allAttendanceRecords} students={users.students} />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      </main>
+    </>
+  );
+}
