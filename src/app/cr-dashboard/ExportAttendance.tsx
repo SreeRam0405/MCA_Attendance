@@ -22,7 +22,7 @@ interface ExportAttendanceProps {
 export function ExportAttendance({ records }: ExportAttendanceProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  const downloadExcel = () => {
+  const downloadCSV = () => {
     if (!dateRange || !dateRange.from || !dateRange.to) {
         alert("Please select a date range.");
         return;
@@ -84,7 +84,7 @@ export function ExportAttendance({ records }: ExportAttendanceProps) {
                 numberOfMonths={2}
             />
         </div>
-        <Button onClick={downloadExcel} disabled={!dateRange || !dateRange.from || !dateRange.to}>Download Excel</Button>
+        <Button onClick={downloadCSV} disabled={!dateRange || !dateRange.from || !dateRange.to}>Download CSV</Button>
       </PopoverContent>
     </Popover>
   );

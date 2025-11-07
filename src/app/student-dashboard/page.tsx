@@ -100,7 +100,6 @@ export default function StudentDashboardPage() {
         if (dateRange?.to && date > dateRange.to) return;
 
         const dayRecords = allRecords[dateStr];
-        const subjectsInDay = selectedSubject === 'all' ? subjects : [selectedSubject];
         
         subjects.forEach(subject => {
             const isSubjectFiltered = selectedSubject === 'all' || selectedSubject === subject;
@@ -145,7 +144,7 @@ export default function StudentDashboardPage() {
   const isAttendanceGood = attendancePercentage >= 75;
   const motivationalMessage = isAttendanceGood
     ? "Great! Keep it up! 💪"
-    : "You need to improve your attendance 📚";
+    : "You need to improve your attendance. 📚";
 
   return (
     <>
@@ -242,7 +241,7 @@ export default function StudentDashboardPage() {
                 <CardHeader>
                     <CardTitle>Your Attendance Progress</CardTitle>
                     <CardDescription>
-                        Here is a summary of your attendance. Minimum 75% is required.
+                        Here is a summary of your attendance. A minimum of 75% is required.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -293,7 +292,7 @@ export default function StudentDashboardPage() {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center h-24">
-                                            No records to display for the selected filter.
+                                            No records to display for the selected filters.
                                         </TableCell>
                                     </TableRow>
                                 )}

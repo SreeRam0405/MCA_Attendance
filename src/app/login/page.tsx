@@ -88,7 +88,7 @@ export default function LoginPage() {
         <div className="flex justify-center items-center gap-2 mb-4">
           <Logo className="h-8 w-8 text-primary" />
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            ClassAttendant
+            Class Attendance
           </h1>
         </div>
         <Tabs defaultValue="cr" className="w-full">
