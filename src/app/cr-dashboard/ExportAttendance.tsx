@@ -13,6 +13,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { users, subjects } from "@/lib/data";
 import type { AttendanceRecord } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface ExportAttendanceProps {
   records: AttendanceRecord;
@@ -66,19 +67,23 @@ export function ExportAttendance({ records }: ExportAttendanceProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <CalendarIcon className="mr-2 h-4 w-4" />
           Export Attendance
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-4 flex flex-col gap-4">
         <p className="font-semibold">Select date range to export</p>
-        <Calendar
-          mode="range"
-          selected={dateRange}
-          onSelect={setDateRange}
-          numberOfMonths={2}
-        />
+        <div className={cn("grid gap-2")}>
+            <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+            />
+        </div>
         <Button onClick={downloadExcel} disabled={!dateRange || !dateRange.from || !dateRange.to}>Download Excel</Button>
       </PopoverContent>
     </Popover>

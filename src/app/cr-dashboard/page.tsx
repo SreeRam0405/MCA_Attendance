@@ -116,14 +116,14 @@ export default function CRDashboardPage() {
       <DashboardHeader />
       <main className="container mx-auto p-4 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold">CR Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">CR Dashboard</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-full sm:w-[240px] justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -141,7 +141,7 @@ export default function CRDashboardPage() {
               </PopoverContent>
             </Popover>
             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,16 +150,18 @@ export default function CRDashboardPage() {
                     ))}
                 </SelectContent>
             </Select>
-            <Button onClick={saveAttendance}>Save Attendance</Button>
-            <ManageAttendanceDialog 
-              records={allAttendanceRecords} 
-              setRecords={setAllAttendanceRecords} 
-            />
-             <ExportAttendance records={allAttendanceRecords} />
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+              <Button onClick={saveAttendance} className="w-full">Save Attendance</Button>
+              <ManageAttendanceDialog 
+                records={allAttendanceRecords} 
+                setRecords={setAllAttendanceRecords} 
+              />
+               <ExportAttendance records={allAttendanceRecords} />
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -206,7 +208,7 @@ export default function CRDashboardPage() {
                                     <TableCell>{student.name}</TableCell>
                                     <TableCell className="text-right">
                                     <div className="flex items-center justify-end space-x-2">
-                                        <label htmlFor={`att-${student.rollNo}`}>Present</label>
+                                        <label htmlFor={`att-${student.rollNo}`} className="text-sm">Present</label>
                                         <Checkbox
                                         id={`att-${student.rollNo}`}
                                         checked={attendance[student.rollNo] || false}

@@ -153,12 +153,12 @@ export default function StudentDashboardPage() {
       <main className="container mx-auto p-4 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 className="text-3xl font-bold">Welcome, {user.name}!</h1>
-                <p className="text-muted-foreground">Roll No: {user.rollNo}</p>
+                <h1 className="text-2xl md:text-3xl font-bold">Welcome, {user.name}!</h1>
+                <p className="text-muted-foreground text-sm md:text-base">Roll No: {user.rollNo}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Select Subject" />
                     </SelectTrigger>
                     <SelectContent>
@@ -173,7 +173,7 @@ export default function StudentDashboardPage() {
                         <Button
                         variant={"outline"}
                         className={cn(
-                            "w-[280px] justify-start text-left font-normal",
+                            "w-full sm:w-[280px] justify-start text-left font-normal",
                             !dateRange && "text-muted-foreground"
                         )}
                         >
@@ -203,11 +203,11 @@ export default function StudentDashboardPage() {
                         />
                     </PopoverContent>
                 </Popover>
-                <Button variant="outline" onClick={() => setDateRange(undefined)} disabled={!dateRange}>Clear Filter</Button>
+                <Button variant="outline" onClick={() => setDateRange(undefined)} disabled={!dateRange} className="w-full sm:w-auto">Clear Filter</Button>
             </div>
         </div>
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Classes Attended</CardTitle>
@@ -237,7 +237,7 @@ export default function StudentDashboardPage() {
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
             <Card>
                 <CardHeader>
                     <CardTitle>Your Attendance Progress</CardTitle>
@@ -253,7 +253,7 @@ export default function StudentDashboardPage() {
                         ) : (
                             <Frown className="h-6 w-6 mr-2 text-red-500" />
                         )}
-                        <p className="text-lg font-medium">{motivationalMessage}</p>
+                        <p className="text-md md:text-lg font-medium">{motivationalMessage}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -264,6 +264,7 @@ export default function StudentDashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="max-h-[300px] overflow-y-auto">
+                      <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="sticky top-0 bg-background">
                                 <TableRow>
@@ -276,13 +277,13 @@ export default function StudentDashboardPage() {
                                 {detailedAttendance.length > 0 ? (
                                     detailedAttendance.map((record, index) => (
                                         <TableRow key={index}>
-                                            <TableCell>{format(new Date(record.date), "PPP")}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{format(new Date(record.date), "PPP")}</TableCell>
                                             <TableCell>{record.subject}</TableCell>
                                             <TableCell className="text-right">
                                                 <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", 
                                                     record.status === "Present" 
-                                                    ? "bg-green-100 text-green-800"
-                                                    : "bg-red-100 text-red-800"
+                                                    ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                                    : "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
                                                 )}>
                                                     {record.status}
                                                 </span>
@@ -298,6 +299,7 @@ export default function StudentDashboardPage() {
                                 )}
                             </TableBody>
                         </Table>
+                      </div>
                     </div>
                 </CardContent>
             </Card>
@@ -306,5 +308,3 @@ export default function StudentDashboardPage() {
     </>
   );
 }
-
-    

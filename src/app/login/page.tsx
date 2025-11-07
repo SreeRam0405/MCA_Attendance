@@ -87,7 +87,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex justify-center items-center gap-2 mb-4">
           <Logo className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             ClassAttendant
           </h1>
         </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
               <CardHeader>
                 <CardTitle>CR Login</CardTitle>
                 <CardDescription>
-                  Enter your credentials to manage attendance.
+                  Enter your credentials.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -163,7 +163,7 @@ export default function LoginPage() {
                         <FormItem>
                           <FormLabel>Roll Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g. 101" {...field} />
+                            <Input placeholder="e.g. 25001F0042" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -63,44 +63,48 @@ export function ManageAttendanceDialog({ records, setRecords }: ManageAttendance
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Manage Attendance</Button>
+        <Button variant="outline" className="w-full sm:w-auto">Manage Attendance</Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[80vh]">
         <DialogHeader>
           <DialogTitle>Manage Attendance</DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto">
-          {sortedDates.map((date) => (
+        <div className="overflow-y-auto pr-4">
+          {sortedDates.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No attendance records found.</p>
+          ) : sortedDates.map((date) => (
             <div key={date} className="mb-4">
               <h3 className="font-bold text-lg mb-2">{format(new Date(date), "PPP")}</h3>
               {Object.keys(records[date]).map((subject) => (
                 <div key={subject} className="mb-4">
                     <h4 className="font-semibold text-md mb-1">{subject}</h4>
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Roll No</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead className="text-right">Present</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {users.students.map((student) => (
-                            <TableRow key={student.rollNo}>
-                            <TableCell>{student.rollNo}</TableCell>
-                            <TableCell>{student.name}</TableCell>
-                            <TableCell className="text-right">
-                                <Checkbox
-                                checked={records[date]?.[subject]?.includes(student.rollNo)}
-                                onCheckedChange={(checked) =>
-                                    handleAttendanceChange(date, subject, student.rollNo, !!checked)
-                                }
-                                />
-                            </TableCell>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>Roll No</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead className="text-right">Present</TableHead>
                             </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                            {users.students.map((student) => (
+                                <TableRow key={student.rollNo}>
+                                <TableCell className="whitespace-nowrap">{student.rollNo}</TableCell>
+                                <TableCell>{student.name}</TableCell>
+                                <TableCell className="text-right">
+                                    <Checkbox
+                                    checked={records[date]?.[subject]?.includes(student.rollNo)}
+                                    onCheckedChange={(checked) =>
+                                        handleAttendanceChange(date, subject, student.rollNo, !!checked)
+                                    }
+                                    />
+                                </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
               ))}
             </div>
