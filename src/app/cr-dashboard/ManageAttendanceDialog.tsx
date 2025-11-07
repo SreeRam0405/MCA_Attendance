@@ -107,7 +107,7 @@ export function ManageAttendanceDialog({ records, setRecords }: ManageAttendance
           ))}
         </div>
         <DialogFooter>
-            <DialogClose>
+            <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
             </DialogClose>
           <Button onClick={handleSave}>Save Changes</Button>
