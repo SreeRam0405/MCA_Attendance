@@ -63,6 +63,9 @@ export default function CRDashboardPage() {
     const fetchAttendance = async () => {
       try {
         const response = await fetch('/api/attendance');
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance');
+        }
         const records: AttendanceRecord = await response.json();
         setAllAttendanceRecords(records);
       } catch (error) {
@@ -81,6 +84,9 @@ export default function CRDashboardPage() {
   }, [router, toast]);
 
   useEffect(() => {
+    // Prevent running this effect until data is loaded
+    if (loading) return;
+
     const formattedDate = format(date, "yyyy-MM-dd");
     const todaysRecord = allAttendanceRecords[formattedDate]?.[selectedSubject] || [];
     const initialAttendance = users.students.reduce((acc, student) => {
@@ -88,7 +94,7 @@ export default function CRDashboardPage() {
       return acc;
     }, {} as Record<string, boolean>);
     setAttendance(initialAttendance);
-  }, [date, selectedSubject, allAttendanceRecords]);
+  }, [date, selectedSubject, allAttendanceRecords, loading]);
 
   const handleAttendanceChange = (rollNo: string, checked: boolean) => {
     setAttendance((prev) => ({ ...prev, [rollNo]: checked }));
@@ -101,7 +107,7 @@ export default function CRDashboardPage() {
     const updatedRecords: AttendanceRecord = { 
         ...allAttendanceRecords, 
         [formattedDate]: {
-            ...allAttendanceRecords[formattedDate],
+            ...(allAttendanceRecords[formattedDate] || {}),
             [selectedSubject]: presentStudents 
         }
     };

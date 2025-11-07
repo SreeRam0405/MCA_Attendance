@@ -83,6 +83,9 @@ export default function StudentDashboardPage() {
     const fetchAttendance = async () => {
       try {
         const response = await fetch('/api/attendance');
+         if (!response.ok) {
+          throw new Error('Failed to fetch attendance');
+        }
         const records: AttendanceRecord = await response.json();
         setAllRecords(records);
       } catch (error) {
@@ -101,7 +104,7 @@ export default function StudentDashboardPage() {
   }, [router, toast]);
 
   useEffect(() => {
-    if (!user || !user.rollNo) return;
+    if (loading || !user || !user.rollNo) return;
 
     let totalClasses = 0;
     let attendedClasses = 0;
@@ -111,8 +114,11 @@ export default function StudentDashboardPage() {
 
     sortedDates.forEach(dateStr => {
         const date = new Date(dateStr);
-        if (dateRange?.from && date < dateRange.from) return;
-        if (dateRange?.to && date > dateRange.to) return;
+        // Adjust date to avoid timezone issues with comparison
+        const checkDate = new Date(date.valueOf() + date.getTimezoneOffset() * 60 * 1000);
+
+        if (dateRange?.from && checkDate < dateRange.from) return;
+        if (dateRange?.to && checkDate > dateRange.to) return;
 
         const dayRecords = allRecords[dateStr];
         
@@ -145,7 +151,7 @@ export default function StudentDashboardPage() {
     });
     setDetailedAttendance(detailedRecords);
 
-  }, [user, allRecords, selectedSubject, dateRange]);
+  }, [user, allRecords, selectedSubject, dateRange, loading]);
 
   if (loading || !user) {
     return (
@@ -185,6 +191,7 @@ export default function StudentDashboardPage() {
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button
+                        id="date"
                         variant={"outline"}
                         className={cn(
                             "w-full sm:w-[280px] justify-start text-left font-normal",
@@ -291,7 +298,7 @@ export default function StudentDashboardPage() {
                                 {detailedAttendance.length > 0 ? (
                                     detailedAttendance.map((record, index) => (
                                         <TableRow key={index}>
-                                            <TableCell className="whitespace-nowrap">{format(new Date(record.date), "PPP")}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{format(new Date(record.date.replace(/-/g, '/')), "PPP")}</TableCell>
                                             <TableCell>{record.subject}</TableCell>
                                             <TableCell className="text-right">
                                                 <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", 
