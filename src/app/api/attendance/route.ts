@@ -3,26 +3,29 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import type { AttendanceRecord } from '@/lib/types';
 
-// Initialize Firebase Admin SDK only if it hasn't been initialized already.
-// This prevents errors during development with hot-reloading.
-function initializeFirebaseAdmin() {
-    if (!admin.apps.length) {
-        try {
-            const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-            if (!privateKey) {
-                throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
-            }
-            admin.initializeApp({
-                credential: admin.credential.cert({
-                    projectId: process.env.FIREBASE_PROJECT_ID,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                    privateKey: privateKey.replace(/\\n/g, '\n'),
-                }),
-            });
-        } catch (error: any) {
-            console.error('Firebase Admin initialization error:', error.message);
-            // This will cause GET/POST requests to fail, which is intended if setup is wrong.
+// This function now returns a boolean indicating success or failure.
+function initializeFirebaseAdmin(): boolean {
+    if (admin.apps.length > 0) {
+        return true; // Already initialized
+    }
+    try {
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        // Check if essential environment variables are present.
+        if (!privateKey || !process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL) {
+            console.error('Firebase Admin credentials are not set in the environment variables.');
+            return false;
         }
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: privateKey.replace(/\\n/g, '\n'),
+            }),
+        });
+        return true;
+    } catch (error: any) {
+        console.error('Firebase Admin initialization error:', error.message);
+        return false;
     }
 }
 
@@ -30,11 +33,8 @@ const attendanceCollectionId = 'attendance';
 const attendanceDocId = 'records';
 
 export async function GET() {
-  initializeFirebaseAdmin();
-  // Ensure the app was initialized before proceeding
-  if (!admin.apps.length) {
-    console.error("Firebase Admin has not been initialized. Check your environment variables.");
-    return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+  if (!initializeFirebaseAdmin()) {
+    return NextResponse.json({ error: 'Firebase Admin not configured. Check server environment variables.' }, { status: 500 });
   }
   
   try {
@@ -45,7 +45,6 @@ export async function GET() {
     if (docSnap.exists) {
       return NextResponse.json(docSnap.data() || {});
     } else {
-      // If no document exists, return an empty object. This is a valid, expected state.
       return NextResponse.json({});
     }
   } catch (error: any) {
@@ -55,11 +54,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  initializeFirebaseAdmin();
-    // Ensure the app was initialized before proceeding
-  if (!admin.apps.length) {
-    console.error("Firebase Admin has not been initialized. Check your environment variables.");
-    return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+  if (!initializeFirebaseAdmin()) {
+    return NextResponse.json({ error: 'Firebase Admin not configured. Check server environment variables.' }, { status: 500 });
   }
 
   try {
@@ -67,8 +63,6 @@ export async function POST(request: Request) {
     const db = admin.firestore();
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
     
-    // Using set with merge: true will create the document if it doesn't exist,
-    // and update/merge the fields if it does. This is the correct way to update partial data.
     await docRef.set(records, { merge: true }); 
     
     return NextResponse.json({ success: true, message: 'Attendance saved successfully.' });

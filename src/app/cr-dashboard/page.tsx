@@ -38,11 +38,14 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import AttendanceChart from "./AttendanceChart";
 import { ManageAttendanceDialog } from "./ManageAttendanceDialog";
 import { ExportAttendance } from "./ExportAttendance";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function CRDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [selectedSubject, setSelectedSubject] = useState<string>(subjects[0]);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
@@ -64,38 +67,34 @@ export default function CRDashboardPage() {
       try {
         const response = await fetch('/api/attendance');
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("API Error Response:", errorText);
-          let errorData = { details: 'Failed to parse error response.' };
-          try {
-            errorData = JSON.parse(errorText);
-          } catch (e) {}
-          console.error("API Error:", errorData.details);
-          throw new Error('Failed to fetch attendance');
+          const errorData = await response.json();
+          if (response.status === 500 && errorData.error.includes("Firebase Admin not configured")) {
+            setError("The application's backend is not configured. Please ensure your hosting environment has the correct Firebase Admin environment variables set.");
+          } else {
+            throw new Error(errorData.details || 'Failed to fetch attendance');
+          }
+        } else {
+          const records: AttendanceRecord = await response.json();
+          setAllAttendanceRecords(records);
         }
-        const records: AttendanceRecord = await response.json();
-        setAllAttendanceRecords(records);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch attendance records:", error);
-        toast({
-          title: "Error",
-          description: "Could not load attendance data. Please check your connection or Firebase setup.",
-          variant: "destructive",
-        });
+        if(!error) { // Only set a generic error if a specific one isn't already set
+            setError("Could not load attendance data. Please check your connection or Firebase setup.");
+        }
       } finally {
         setLoading(false);
       }
     };
     
     fetchAttendance();
-  }, [router, toast]);
+  }, [router]);
 
   const handleAttendanceChange = (rollNo: string, isPresent: boolean) => {
     setAttendance((prev) => ({ ...prev, [rollNo]: isPresent }));
   };
 
   useEffect(() => {
-    // Prevent running this effect until data is loaded
     if (loading) return;
 
     const formattedDate = format(date, "yyyy-MM-dd");
@@ -151,6 +150,18 @@ export default function CRDashboardPage() {
         <div className="text-lg">Loading Dashboard...</div>
       </div>
     );
+  }
+
+  if (error) {
+    return (
+        <div className="flex items-center justify-center min-h-screen p-4">
+            <Alert variant="destructive" className="max-w-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Application Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        </div>
+    )
   }
 
   const presentCount = Object.values(attendance).filter(Boolean).length;

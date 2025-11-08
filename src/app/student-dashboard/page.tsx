@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { BookCheck, CalendarDays, Percent, Smile, Frown, Calendar as CalendarIcon } from "lucide-react";
+import { BookCheck, CalendarDays, Percent, Smile, Frown, Calendar as CalendarIcon, AlertCircle } from "lucide-react";
 
 import {
   Card,
@@ -37,11 +37,11 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import type { AttendanceRecord, LoggedInUser } from "@/lib/types";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { subjects } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 interface DetailedAttendance {
     date: string;
@@ -51,8 +51,8 @@ interface DetailedAttendance {
 
 export default function StudentDashboardPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<LoggedInUser | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord>({});
   
@@ -83,25 +83,29 @@ export default function StudentDashboardPage() {
     const fetchAttendance = async () => {
       try {
         const response = await fetch('/api/attendance');
-         if (!response.ok) {
-          throw new Error('Failed to fetch attendance');
+        if (!response.ok) {
+            const errorData = await response.json();
+            if (response.status === 500 && errorData.error.includes("Firebase Admin not configured")) {
+              setError("The application's backend is not configured. Please ensure your hosting environment has the correct Firebase Admin environment variables set.");
+            } else {
+              throw new Error(errorData.details || 'Failed to fetch attendance');
+            }
+        } else {
+            const records: AttendanceRecord = await response.json();
+            setAllRecords(records);
         }
-        const records: AttendanceRecord = await response.json();
-        setAllRecords(records);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch attendance records:", error);
-        toast({
-          title: "Error",
-          description: "Could not load attendance data.",
-          variant: "destructive",
-        });
+        if(!error) {
+            setError("Could not load attendance data. Please check your connection or Firebase setup.");
+        }
       } finally {
         setLoading(false);
       }
     };
     
     fetchAttendance();
-  }, [router, toast]);
+  }, [router]);
 
   useEffect(() => {
     if (loading || !user || !user.rollNo) return;
@@ -159,6 +163,18 @@ export default function StudentDashboardPage() {
         <div className="text-lg">Loading Dashboard...</div>
       </div>
     );
+  }
+
+  if (error) {
+    return (
+        <div className="flex items-center justify-center min-h-screen p-4">
+            <Alert variant="destructive" className="max-w-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Application Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        </div>
+    )
   }
 
   const attendancePercentage = Math.round(attendanceStats.percentage);
