@@ -35,7 +35,6 @@ export const users: UserData = {
     { rollNo: "25001F0030", name: "S.Bhavani", password: "S.BHAVANI030" },
     { rollNo: "25001F0031", name: "Kuruva Uday Kiran", password: "KURUVA UDAY KIRAN031" },
     { rollNo: "25001F0032", name: "Vempalli Basith Ali", password: "VEMPALLI BASITH ALI032" },
-    { rollNo: "25001F0033", name: "DROP OUT", password: "DROPOUT033" },
     { rollNo: "25001F0034", name: "D.Pavan Kumar", password: "D.PAVAN KUMAR034" },
     { rollNo: "25001F0035", name: "G.Jahnavi", password: "G.JAHNAVI035" },
     { rollNo: "25001F0036", name: "Tydula Gunasri", password: "TYDULA GUNASRI036" },
@@ -59,8 +58,7 @@ export const users: UserData = {
     { rollNo: "25001F0054", name: "Maridi Sreya", password: "MARIDI SREYA054" },
     { rollNo: "25001F0055", name: "Atmakuru Kalavathi", password: "ATMAKURU KALAVATHI055" },
     { rollNo: "25001F0056", name: "Harijana Sandhya", password: "HARIJANA SANDHYA056" },
-    { rollNo: "25001F0057", name: "Birapogu Priyadarshini", password: "BIRAPOGU PRIYADARSHINI057" },
-    { rollNo: "25001F0058", name: "DROP OUT", password: "DROPOUT058" }
+    { rollNo: "25001F0057", name: "Birapogu Priyadarshini", password: "BIRAPOGU PRIYADARSHINI057" }
   ]
   
 };
