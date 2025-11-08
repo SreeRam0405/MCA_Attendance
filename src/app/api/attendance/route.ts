@@ -3,32 +3,34 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import type { AttendanceRecord } from '@/lib/types';
 
-// This is the key fix: Initialize Firebase Admin SDK only if it hasn't been initialized already.
+// Initialize Firebase Admin SDK only if it hasn't been initialized already.
 // This prevents errors during development with hot-reloading.
-if (!admin.apps.length) {
-  try {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    if (!privateKey) {
-      throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
+function initializeFirebaseAdmin() {
+    if (!admin.apps.length) {
+        try {
+            const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+            if (!privateKey) {
+                throw new Error('FIREBASE_PRIVATE_KEY environment variable is not set.');
+            }
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    privateKey: privateKey.replace(/\\n/g, '\n'),
+                }),
+            });
+        } catch (error: any) {
+            console.error('Firebase Admin initialization error:', error.message);
+            // This will cause GET/POST requests to fail, which is intended if setup is wrong.
+        }
     }
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey.replace(/\\n/g, '\n'),
-      }),
-    });
-  } catch (error: any) {
-    console.error('Firebase Admin initialization error:', error.message);
-    // This will cause GET/POST requests to fail, which is intended if setup is wrong.
-  }
 }
 
-const db = admin.firestore();
 const attendanceCollectionId = 'attendance';
 const attendanceDocId = 'records';
 
 export async function GET() {
+  initializeFirebaseAdmin();
   // Ensure the app was initialized before proceeding
   if (!admin.apps.length) {
     console.error("Firebase Admin has not been initialized. Check your environment variables.");
@@ -36,6 +38,7 @@ export async function GET() {
   }
   
   try {
+    const db = admin.firestore();
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
     const docSnap = await docRef.get();
 
@@ -52,6 +55,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  initializeFirebaseAdmin();
     // Ensure the app was initialized before proceeding
   if (!admin.apps.length) {
     console.error("Firebase Admin has not been initialized. Check your environment variables.");
@@ -60,6 +64,7 @@ export async function POST(request: Request) {
 
   try {
     const records: AttendanceRecord = await request.json();
+    const db = admin.firestore();
     const docRef = db.collection(attendanceCollectionId).doc(attendanceDocId);
     
     // Using set with merge: true will create the document if it doesn't exist,
