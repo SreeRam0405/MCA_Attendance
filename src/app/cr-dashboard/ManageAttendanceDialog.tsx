@@ -110,13 +110,11 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
     const newRecords = { ...editedRecords };
     if (newRecords[date] && newRecords[date][subject]) {
       delete newRecords[date][subject];
-      // If the date object becomes empty, delete it as well
       if (Object.keys(newRecords[date]).length === 0) {
         delete newRecords[date];
       }
     }
     setEditedRecords(newRecords);
-    // Directly save the change
     handleSaveAfterDeletion(newRecords, `Record for ${subject} on ${format(new Date(date.replace(/-/g, '/')), "PPP")} deleted.`);
   };
 
@@ -132,7 +130,8 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
         throw new Error('Failed to delete attendance record');
       }
       
-      onRecordsUpdate(recordsToSave); // Update parent state
+      onRecordsUpdate(recordsToSave);
+      setEditedRecords(JSON.parse(JSON.stringify(recordsToSave))); // Resync local state after successful save
       toast({
         title: "Record Deleted",
         description: successMessage,
@@ -214,7 +213,7 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
           ) : sortedDates.map((date) => (
             <div key={date} className="mb-4">
               <h3 className="font-bold text-lg mb-2">{format(new Date(date.replace(/-/g, '/')), "PPP")}</h3>
-              {Object.keys(editedRecords[date]).map((subject) => (
+              {Object.keys(editedRecords[date] || {}).map((subject) => (
                 <div key={subject} className="mb-4 border rounded-md p-4">
                     <div className="flex justify-between items-center mb-2">
                         <h4 className="font-semibold text-md">{subject}</h4>
