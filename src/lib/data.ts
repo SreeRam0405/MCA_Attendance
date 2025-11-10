@@ -48,7 +48,7 @@ export const users: UserData = {
     { rollNo: "25001F0044", name: "Boya Chandana", password: "BOYA CHANDANA044" },
     { rollNo: "25001F0045", name: "Golla Rajani", password: "GOLLA RAJANI045" },
     { rollNo: "25001F0046", name: "P.Mukhesh Pavan Kumar", password: "P.MUKHESH PAVAN KUMAR046" },
-    { rollノ: "25001F0047", name: "Yarramreddy Haravind", password: "YARRAMREDDY HARAVIND047" },
+    { rollNo: "25001F0047", name: "Yarramreddy Haravind", password: "YARRAMREDDY HARAVIND047" },
     { rollNo: "25001F0048", name: "E.N.Rachana", password: "E.N.RACHANA048" },
     { rollNo: "25001F0049", name: "Lingayath Prakash", password: "LINGAYATH PRAKASH049" },
     { rollNo: "25001F0050", name: "Poola.Gnaneswari", password: "POOLA.GNANESWARI050" },
