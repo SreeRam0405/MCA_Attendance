@@ -68,18 +68,18 @@ export default function CRDashboardPage() {
         const response = await fetch('/api/attendance');
         if (!response.ok) {
           const errorData = await response.json();
-          if (response.status === 500 && errorData.error.includes("Firebase Admin not configured")) {
+          if (response.status === 500 && errorData.error?.includes("Firebase Admin not configured")) {
             setError("The application's backend is not configured. Please ensure your hosting environment has the correct Firebase Admin environment variables set.");
           } else {
-            throw new Error(errorData.details || 'Failed to fetch attendance');
+            throw new Error(errorData.error || 'Failed to fetch attendance');
           }
         } else {
           const records: AttendanceRecord = await response.json();
           setAllAttendanceRecords(records);
         }
       } catch (error: any) {
-        console.error("Failed to fetch attendance records:", error);
-        if(!error) { // Only set a generic error if a specific one isn't already set
+        console.error("🔥 [DEBUG] Fetch Attendance Error:", error);
+        if(!error?.message?.includes('Firebase Admin not configured')) {
             setError("Could not load attendance data. Please check your connection or Firebase setup.");
         }
       } finally {
@@ -93,6 +93,14 @@ export default function CRDashboardPage() {
   const handleAttendanceChange = (rollNo: string, isPresent: boolean) => {
     setAttendance((prev) => ({ ...prev, [rollNo]: isPresent }));
   };
+
+  const handleSelectAll = (isPresent: boolean) => {
+    const newAttendance = { ...attendance };
+    users.students.forEach(student => {
+        newAttendance[student.rollNo] = isPresent;
+    });
+    setAttendance(newAttendance);
+  }
 
   useEffect(() => {
     if (loading) return;
@@ -166,6 +174,7 @@ export default function CRDashboardPage() {
 
   const presentCount = Object.values(attendance).filter(Boolean).length;
   const totalStudents = users.students.length;
+  const areAllPresent = totalStudents > 0 && presentCount === totalStudents;
 
   return (
     <>
@@ -254,7 +263,17 @@ export default function CRDashboardPage() {
                                 <TableRow>
                                 <TableHead className="w-[100px]">Roll No</TableHead>
                                 <TableHead>Name</TableHead>
-                                <TableHead className="text-right">Attendance</TableHead>
+                                <TableHead className="text-right">
+                                  <div className="flex items-center justify-end space-x-2">
+                                    <label htmlFor="select-all" className="text-sm">Present</label>
+                                    <Checkbox
+                                        id="select-all"
+                                        checked={areAllPresent}
+                                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                        aria-label="Select all students"
+                                      />
+                                  </div>
+                                </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -264,7 +283,6 @@ export default function CRDashboardPage() {
                                     <TableCell>{student.name}</TableCell>
                                     <TableCell className="text-right">
                                     <div className="flex items-center justify-end space-x-2">
-                                        <label htmlFor={`att-${student.rollNo}`} className="text-sm">Present</label>
                                         <Checkbox
                                         id={`att-${student.rollNo}`}
                                         checked={attendance[student.rollNo] || false}

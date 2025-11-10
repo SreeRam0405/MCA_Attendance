@@ -11,6 +11,17 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,6 +36,7 @@ import { users } from "@/lib/data";
 import type { AttendanceRecord } from "@/lib/types";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Trash2 } from "lucide-react";
 
 interface ManageAttendanceDialogProps {
   records: AttendanceRecord;
@@ -94,6 +106,34 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}), // Send an empty object to clear data
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear attendance data');
+      }
+
+      onRecordsUpdate({}); // Update parent state to be empty
+      toast({
+        title: "Data Cleared",
+        description: "All attendance records have been deleted.",
+      });
+      setOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Could not clear attendance records.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const sortedDates = Object.keys(records).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
 
   return (
@@ -102,8 +142,29 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
         <Button variant="outline" className="w-full sm:w-auto">Manage Attendance</Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[80vh]">
-        <DialogHeader>
+        <DialogHeader className="flex-row justify-between items-center">
           <DialogTitle>Manage Attendance</DialogTitle>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={Object.keys(records).length === 0}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear All Data
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete all
+                  attendance records from the server.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearAll}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DialogHeader>
         <div className="overflow-y-auto pr-4">
           {sortedDates.length === 0 ? (
