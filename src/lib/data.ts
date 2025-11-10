@@ -63,4 +63,4 @@ export const users: UserData = {
   
 };
 
-export const subjects = ["PDS", "CO", "DBMS", "MSF","OS"];
+export const subjects = ["PDS", "CO", "DBMS", "MSF","OS", "DBMS Lab", "PDS Lab", "OS Lab"];
