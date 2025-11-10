@@ -106,6 +106,48 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
     }
   };
 
+  const handleClearSubjectRecord = (date: string, subject: string) => {
+    const newRecords = { ...editedRecords };
+    if (newRecords[date] && newRecords[date][subject]) {
+      delete newRecords[date][subject];
+      // If the date object becomes empty, delete it as well
+      if (Object.keys(newRecords[date]).length === 0) {
+        delete newRecords[date];
+      }
+    }
+    setEditedRecords(newRecords);
+    // Directly save the change
+    handleSaveAfterDeletion(newRecords, `Record for ${subject} on ${format(new Date(date.replace(/-/g, '/')), "PPP")} deleted.`);
+  };
+
+  const handleSaveAfterDeletion = async (recordsToSave: AttendanceRecord, successMessage: string) => {
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recordsToSave),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete attendance record');
+      }
+      
+      onRecordsUpdate(recordsToSave); // Update parent state
+      toast({
+        title: "Record Deleted",
+        description: successMessage,
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Could not delete the record.",
+        variant: "destructive",
+      });
+    }
+  }
+
   const handleClearAll = async () => {
     try {
       const response = await fetch('/api/attendance', {
@@ -119,11 +161,11 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
       }
 
       onRecordsUpdate({}); // Update parent state to be empty
+      setEditedRecords({});
       toast({
         title: "Data Cleared",
         description: "All attendance records have been deleted.",
       });
-      setOpen(false);
     } catch (error) {
       console.error(error);
       toast({
@@ -134,7 +176,7 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
     }
   };
 
-  const sortedDates = Object.keys(records).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+  const sortedDates = Object.keys(editedRecords).sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -142,11 +184,11 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
         <Button variant="outline" className="w-full sm:w-auto">Manage Attendance</Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[80vh]">
-        <DialogHeader className="flex-row justify-between items-center">
+        <DialogHeader className="flex-row justify-between items-center pr-6">
           <DialogTitle>Manage Attendance</DialogTitle>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={Object.keys(records).length === 0}>
+              <Button variant="destructive" size="sm" disabled={Object.keys(editedRecords).length === 0}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Clear All Data
               </Button>
@@ -155,7 +197,7 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete all
+                  This action cannot be undone. This will permanently delete ALL
                   attendance records from the server.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -166,15 +208,37 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
             </AlertDialogContent>
           </AlertDialog>
         </DialogHeader>
-        <div className="overflow-y-auto pr-4">
+        <div className="overflow-y-auto pr-4 h-full">
           {sortedDates.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">No attendance records found.</p>
           ) : sortedDates.map((date) => (
             <div key={date} className="mb-4">
               <h3 className="font-bold text-lg mb-2">{format(new Date(date.replace(/-/g, '/')), "PPP")}</h3>
-              {Object.keys(records[date]).map((subject) => (
-                <div key={subject} className="mb-4">
-                    <h4 className="font-semibold text-md mb-1">{subject}</h4>
+              {Object.keys(editedRecords[date]).map((subject) => (
+                <div key={subject} className="mb-4 border rounded-md p-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-semibold text-md">{subject}</h4>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4"/>
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete the attendance record for <strong>{subject}</strong> on <strong>{format(new Date(date.replace(/-/g, '/')), "PPP")}</strong>. This action cannot be undone.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleClearSubjectRecord(date, subject)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
@@ -207,7 +271,7 @@ export function ManageAttendanceDialog({ records, onRecordsUpdate }: ManageAtten
             </div>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="pr-6">
             <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
             </DialogClose>
